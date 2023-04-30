@@ -8,17 +8,18 @@ import (
 )
 
 type Service struct {
-	Name   string
-	Typ    reflect.Type
-	Rcvr   reflect.Value
-	Method map[string]*MethodType
+	Name   string                 //映射的结构体的名称
+	Typ    reflect.Type           //结构体的类型
+	Rcvr   reflect.Value          //结构体的实例本身
+	Method map[string]*MethodType //存储映射的结构体的所有符合条件的方法
 }
 
+// 入参是任意需要映射为服务的结构体实例
 func NewService(rcvr interface{}) *Service {
 	s := new(Service)
+	s.Typ = reflect.TypeOf(rcvr)
 	s.Rcvr = reflect.ValueOf(rcvr)
 	s.Name = reflect.Indirect(s.Rcvr).Type().Name()
-	s.Typ = reflect.TypeOf(rcvr)
 	if !ast.IsExported(s.Name) {
 		log.Fatalf("rpc server: %s is not a valid service name", s.Name)
 	}
@@ -50,6 +51,11 @@ func (s *Service) RegisterMethods() {
 	}
 }
 
+func isExportedOrBuiltinType(t reflect.Type) bool {
+	return ast.IsExported(t.Name()) || t.PkgPath() == ""
+}
+
+// 通过反射值调用方法
 func (s *Service) Call(m *MethodType, argv, replyv reflect.Value) error {
 	atomic.AddUint64(&m.NumCalls, 1)
 	f := m.Method.Func
@@ -58,8 +64,4 @@ func (s *Service) Call(m *MethodType, argv, replyv reflect.Value) error {
 		return errInter.(error)
 	}
 	return nil
-}
-
-func isExportedOrBuiltinType(t reflect.Type) bool {
-	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }

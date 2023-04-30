@@ -109,6 +109,9 @@ func (s *Server) readRequest(cc xxcode.Code) (*request, error) {
 	if err != nil {
 		return req, err
 	}
+
+	// 通过 newArgv() 和 newReplyv() 两个方法创建出两个入参实例，
+	//然后通过 cc.ReadBody() 将请求报文反序列化为第一个入参 argv
 	req.argv = req.mtype.NewArgv()
 	req.replyv = req.mtype.NewReplyv()
 
@@ -132,6 +135,7 @@ func (s *Server) sendResponse(cc xxcode.Code, h *xxcode.Header, body interface{}
 	}
 }
 
+// 通过 req.svc.call 完成方法调用，将 replyv 传递给 sendResponse 完成序列化即可。
 func (s *Server) handleRequest(cc xxcode.Code, req *request, sending *sync.Mutex, wg *sync.WaitGroup, timeout time.Duration) {
 	defer wg.Done()
 	called := make(chan struct{})
@@ -163,6 +167,10 @@ func (s *Server) handleRequest(cc xxcode.Code, req *request, sending *sync.Mutex
 	}
 }
 
+// 通过 ServiceMethod 从 serviceMap 中找到对应的 service
+// ServiceMethod 的构成是 “Service.Method”，
+// 因此先将其分割成 2 部分，第一部分是 Service 的名称，第二部分即方法名。
+// 先从 serviceMap 中找到对应的 service 实例，再从 service 实例的 method 中，找到对应的 methodType。
 func (s *Server) findService(serviceMethod string) (svc *service.Service, mtype *service.MethodType, err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
@@ -216,4 +224,6 @@ func (s *Server) Register(rcvr interface{}) error {
 }
 
 // Register publishes the receiver's methods in the DefaultServer.
-func Register(rcvr interface{}) error { return DefaultServer.Register(rcvr) }
+func Register(rcvr interface{}) error {
+	return DefaultServer.Register(rcvr)
+}

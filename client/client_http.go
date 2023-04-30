@@ -48,6 +48,7 @@ func XDial(rpcAddr string, opts ...*common.Option) (*Client, error) {
 		return DialHTTP("tcp", addr, opts...)
 	default:
 		// tcp, unix or other transport protocol
-		return Dial(protocol, addr, opts...)
+		return DialHTTP(protocol, addr, opts...)
 	}
+	return nil, nil
 }

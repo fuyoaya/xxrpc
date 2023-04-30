@@ -6,16 +6,17 @@ import (
 )
 
 type MethodType struct {
-	Method    reflect.Method
-	ArgType   reflect.Type
-	ReplyType reflect.Type
-	NumCalls  uint64
+	Method    reflect.Method //方法本身
+	ArgType   reflect.Type   //第一个参数的类型
+	ReplyType reflect.Type   //第二个参数的类型
+	NumCalls  uint64         //统计方法调用次数s
 }
 
 func (m *MethodType) NumCall() uint64 {
 	return atomic.LoadUint64(&m.NumCalls)
 }
 
+// TODO:
 func (m *MethodType) NewArgv() reflect.Value {
 	var argv reflect.Value
 	// arg may be a pointer type, or a value type
