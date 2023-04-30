@@ -258,6 +258,8 @@ func dialTimeout(f newClientFunc, network, address string, opts ...*common.Optio
 	if err != nil {
 		return nil, err
 	}
+
+	// 将 net.Dial 替换为 net.DialTimeout，如果连接创建超时，将返回错误。
 	conn, err := net.DialTimeout(network, address, opt.ConnectTimeout)
 	if err != nil {
 		return nil, err
@@ -278,9 +280,15 @@ func dialTimeout(f newClientFunc, network, address string, opts ...*common.Optio
 		return result.client, result.err
 	}
 	select {
+	// 如果 time.After() 信道先接收到消息，则说明 NewClient 执行超时，返回错误。
 	case <-time.After(opt.ConnectTimeout):
 		return nil, fmt.Errorf("rpc client: connect timeout: expect within %s", opt.ConnectTimeout)
 	case result := <-ch:
 		return result.client, result.err
 	}
+}
+
+// Dial connects to an RPC server at the specified network address
+func Dial(network, address string, opts ...*common.Option) (*Client, error) {
+	return dialTimeout(NewClient, network, address, opts...)
 }

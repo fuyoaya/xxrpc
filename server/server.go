@@ -136,6 +136,9 @@ func (s *Server) sendResponse(cc xxcode.Code, h *xxcode.Header, body interface{}
 }
 
 // 通过 req.svc.call 完成方法调用，将 replyv 传递给 sendResponse 完成序列化即可。
+// 这里需要确保 sendResponse 仅调用一次，因此将整个过程拆分为 called 和 sent 两个阶段，在这段代码中只会发生如下两种情况：
+// called 信道接收到消息，代表处理没有超时，继续执行 sendResponse。
+// time.After() 先于 called 接收到消息，说明处理已经超时，called 和 sent 都将被阻塞。在 case <-time.After(timeout) 处调用 sendResponse。
 func (s *Server) handleRequest(cc xxcode.Code, req *request, sending *sync.Mutex, wg *sync.WaitGroup, timeout time.Duration) {
 	defer wg.Done()
 	called := make(chan struct{})
@@ -158,6 +161,7 @@ func (s *Server) handleRequest(cc xxcode.Code, req *request, sending *sync.Mutex
 		<-sent
 		return
 	}
+
 	select {
 	case <-time.After(timeout):
 		req.head.Error = fmt.Sprintf("rpc server: request handle timeout: expect within %s", timeout)

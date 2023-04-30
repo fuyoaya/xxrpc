@@ -28,6 +28,7 @@ func startServer(addr chan string) {
 	server.Accept(listener)
 }
 
+// 用于测试连接超时。NewClient 函数耗时 2s，ConnectionTimeout 分别设置为 1s 和 0 两种场景。
 func TestClient_dialTimeout(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":8888")
@@ -47,6 +48,7 @@ func TestClient_dialTimeout(t *testing.T) {
 	})
 }
 
+// 测试处理超时。Bar.Timeout 耗时 2s，场景一：客户端设置超时时间为 1s，服务端无限制；场景二，服务端设置超时时间为1s，客户端无限制。
 func TestClient_Call(t *testing.T) {
 	t.Parallel()
 	addrCh := make(chan string)
@@ -56,6 +58,7 @@ func TestClient_Call(t *testing.T) {
 	t.Run("client timeout", func(t *testing.T) {
 		client, _ := DialHTTP("tcp", addr)
 		ctx, _ := context.WithTimeout(context.Background(), time.Second)
+		//ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
 		var reply int
 		err := client.Call(ctx, "Bar.Timeout", 1, &reply)
 		t.Log(err.Error())
